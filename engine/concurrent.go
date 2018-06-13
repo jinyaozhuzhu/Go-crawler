@@ -18,20 +18,25 @@ func (e *ConcurrentEngine) Run(seeds ...Request) {
 
 	in := make(chan Request)
 	out := make(chan ParseResult)
+	//	in is worker chan
 	e.Scheduler.ConfigureMasterWorkerChan(in)
 
-	for _, r := range seeds {
-		e.Scheduler.Submit(r)
-	}
 
 	for i := 0; i < e.WorkerCount; i++ {
 		createWorker(in, out)
 	}
 
+	for _, r := range seeds {
+		e.Scheduler.Submit(r)
+	}
+
+	itemCount := 1
+	//一直获取result，返回request
 	for {
 		result := <-out
 		for _, item := range result.Items {
-			log.Printf("Got item: %v", item)
+			log.Printf("Got item #%d: %v", itemCount, item)
+			itemCount++
 		}
 
 		for _, request := range result.Requests {
@@ -41,6 +46,7 @@ func (e *ConcurrentEngine) Run(seeds ...Request) {
 }
 func createWorker(in chan Request, out chan ParseResult) {
 	go func() {
+		//一直取request，返回result
 		for {
 			request := <-in
 			result, err := worker(request)

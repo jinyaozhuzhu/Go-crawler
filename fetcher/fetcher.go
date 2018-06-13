@@ -10,10 +10,14 @@ import (
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
 	"log"
+	"time"
 )
 
 // 根据utl 返回网页数据
+var rateLimiter = time.Tick(10 * time.Millisecond)
+
 func Fetch(url string) ([] byte, error) {
+	<-rateLimiter
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
