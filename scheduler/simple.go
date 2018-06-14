@@ -4,11 +4,18 @@ import "crawler/engine"
 
 type SimpleScheduler struct {
 	//这里是的workerChan就是被配置成了in
-	WorkerChan chan engine.Request
+	workerChan chan engine.Request
 }
 
-func (s *SimpleScheduler) ConfigureMasterWorkerChan(c chan engine.Request) {
-	s.WorkerChan = c
+func (s *SimpleScheduler) WorkerChan() chan engine.Request {
+	return s.workerChan
+}
+
+func (s *SimpleScheduler) WorkerReady(chan engine.Request) {
+}
+
+func (s *SimpleScheduler) Run() {
+	s.workerChan = make(chan engine.Request)
 }
 
 //此处submit成功的前提是必须有空闲的worker在等待（在消耗WorkerChan）
@@ -18,6 +25,6 @@ func (s *SimpleScheduler) ConfigureMasterWorkerChan(c chan engine.Request) {
 
 func (s *SimpleScheduler) Submit(r engine.Request) {
 	go func() {
-		s.WorkerChan <- r
+		s.workerChan <- r
 	}()
 }
