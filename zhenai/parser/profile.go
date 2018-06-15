@@ -2,9 +2,9 @@ package parser
 
 import (
 	"crawler/engine"
+	"crawler/model"
 	"regexp"
 	"strconv"
-	"crawler/model"
 )
 
 var ageRe = regexp.MustCompile(`<td><span class="label">年龄：</span>(\d+)岁</td>`)
@@ -19,8 +19,9 @@ var occupationRe = regexp.MustCompile(` <td><span class="label">职业： </span
 var hokouRe = regexp.MustCompile(` <td><span class="label">([^<]+)</span></td>`)
 var houseRe = regexp.MustCompile(`<td><span class="label">住房条件：</span><span field="">([^<]+)</span></td>`)
 var carRe = regexp.MustCompile(`<td><span class="label">是否购车：</span><span field="">([^<]+)</span></td>`)
+var idUrlRe = regexp.MustCompile(`http://album.zhenai.com/u/([\d]+)`)
 
-func ParseProfile(contents []byte, name string) engine.ParseResult {
+func ParseProfile(contents []byte, url string, name string) engine.ParseResult {
 	profile := model.Profile{}
 
 	age, err := strconv.Atoi(extractString(contents, ageRe))
@@ -47,8 +48,15 @@ func ParseProfile(contents []byte, name string) engine.ParseResult {
 	profile.Xinzuo = extractString(contents, xinzuoRe)
 
 	result := engine.ParseResult{
-		Items: []interface{}{profile},
+		Items: []engine.Item{{
+			Id:      extractString([]byte(url), idUrlRe),
+			Url:     url,
+			Type:    "zhenai",
+			PayLoad: profile,
+		},
+		},
 	}
+
 	return result
 }
 

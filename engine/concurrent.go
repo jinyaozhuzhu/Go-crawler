@@ -1,9 +1,11 @@
 package engine
 
+import "sync"
+
 type ConcurrentEngine struct {
 	Scheduler   Scheduler
 	WorkerCount int
-	ItemChan    chan interface{}
+	ItemChan    chan Item
 }
 
 type Scheduler interface {
@@ -20,7 +22,7 @@ type ReadyNotifier interface {
 func (e *ConcurrentEngine) Run(seeds ...Request) {
 
 	out := make(chan ParseResult)
-	//	in is worker chan
+
 	e.Scheduler.Run()
 
 	for i := 0; i < e.WorkerCount; i++ {
@@ -52,6 +54,10 @@ func createWorker(in chan Request, out chan ParseResult, ready ReadyNotifier) {
 			//tell scheduler I am ready
 			ready.WorkerReady(in)
 			request := <-in
+			url := request.Url
+			if isDuplicate(url) {
+				continue
+			}
 			result, err := worker(request)
 			if err != nil {
 				continue
@@ -59,4 +65,15 @@ func createWorker(in chan Request, out chan ParseResult, ready ReadyNotifier) {
 			out <- result
 		}
 	}()
+}
+
+var visitedUrls sync.Map
+
+func isDuplicate(url string) bool {
+	_, ok := visitedUrls.Load(url)
+	if ok {
+		return true
+	}
+	visitedUrls.Store(url, 1)
+	return false
 }
